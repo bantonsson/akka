@@ -7,13 +7,13 @@ import akka.remote.transport.ThrottlerTransportAdapter._
 import akka.testkit.TimingTest
 import akka.testkit.DefaultTimeout
 import akka.testkit.ImplicitSender
-import akka.testkit.{ TimingTest, DefaultTimeout, ImplicitSender, AkkaSpec }
+import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TimingTest }
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor._
 import scala.concurrent.duration._
 import akka.testkit._
-import akka.remote.{ QuarantinedEvent, EndpointException, RARP }
-import akka.remote.transport.FailureInjectorTransportAdapter.{ One, Drop }
+import akka.remote.{ EndpointException, QuarantinedEvent, RARP }
+import akka.remote.transport.FailureInjectorTransportAdapter.{ Drop, One }
 import scala.concurrent.Await
 import akka.actor.ActorRef
 import akka.actor.Actor
@@ -29,9 +29,9 @@ import akka.testkit.EventFilter
 import akka.dispatch.sysmsg.{ Failed, SystemMessage }
 
 object SystemMessageDeliveryStressTest {
-  val msgCount = 5000
+  val msgCount = 300
   val burstSize = 100
-  val burstDelay = 500.millis
+  val burstDelay = 300.millis
 
   val baseConfig: Config = ConfigFactory parseString (s"""
     akka {
@@ -149,29 +149,29 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
       val transportA = RARP(systemA).provider.transport
       val transportB = RARP(systemB).provider.transport
 
-      Await.result(transportA.managementCommand(One(addressB, Drop(0.1, 0.1))), 3.seconds.dilated)
-      Await.result(transportB.managementCommand(One(addressA, Drop(0.1, 0.1))), 3.seconds.dilated)
+      Await.result(transportA.managementCommand(One(addressB, Drop(0.4, 0.4))), 3.seconds.dilated)
+      Await.result(transportB.managementCommand(One(addressA, Drop(0.4, 0.4))), 3.seconds.dilated)
 
       // Schedule peridodic disassociates
-      systemA.scheduler.schedule(3.second, 8.seconds) {
-        transportA.managementCommand(ForceDisassociateExplicitly(addressB, reason = AssociationHandle.Unknown))
-      }
+      //      systemA.scheduler.schedule(3.second, 8.seconds) {
+      //        transportA.managementCommand(ForceDisassociateExplicitly(addressB, reason = AssociationHandle.Unknown))
+      //      }
 
-      systemB.scheduler.schedule(7.seconds, 8.seconds) {
-        transportB.managementCommand(ForceDisassociateExplicitly(addressA, reason = AssociationHandle.Unknown))
-      }
+      //      systemB.scheduler.schedule(7.seconds, 8.seconds) {
+      //        transportB.managementCommand(ForceDisassociateExplicitly(addressA, reason = AssociationHandle.Unknown))
+      //      }
 
       systemB.actorOf(Props(classOf[SystemMessageSender], msgCount, burstSize, burstDelay, targetForB))
       systemA.actorOf(Props(classOf[SystemMessageSender], msgCount, burstSize, burstDelay, targetForA))
 
-      val toSend = (0 until msgCount).toList
-      var maxDelay = 0L
+      //      val toSend = (0 until msgCount).toList
+      //      var maxDelay = 0L
 
       for (m ← 0 until msgCount) {
-        val start = System.currentTimeMillis()
+        //        val start = System.currentTimeMillis()
         probeB.expectMsg(10.minutes, m)
         probeA.expectMsg(10.minutes, m)
-        maxDelay = math.max(maxDelay, (System.currentTimeMillis() - start) / 1000)
+        //        maxDelay = math.max(maxDelay, (System.currentTimeMillis() - start) / 1000)
       }
     }
   }

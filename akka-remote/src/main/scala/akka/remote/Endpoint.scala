@@ -241,6 +241,7 @@ private[remote] class ReliableDeliverySupervisor(
   var seqCounter: Long = _
 
   def reset(): Unit = {
+    println(s">>> Reset buffer $resendBuffer $localAddress -> $remoteAddress")
     resendBuffer = new AckedSendBuffer[Send](settings.SysMsgBufferSize)
     bufferWasInUse = false
     seqCounter = 0L
